@@ -4,41 +4,50 @@ import (
     "fmt"
     "gonum.org/v1/gonum/mat"
     "gonum.org/v1/gonum/stat"
-    "github.com/go-nlp/tfidf" // Correct import path for go-nlp/tfidf
+    "prayerProcessor/tfidf" // Adjust the import path to where your tfidf package is located.
 )
 
-// Assuming we have a corpus and a way to fit the model before using it for a single text.
-// For simplicity, we're directly using it here but in practice, you should fit this model
-// with a corpus of documents to get meaningful results.
-
-// Initialize a global TF-IDF vectorizer
-var vectorizer = tfidf.New()
-
-// TextToVector converts prayer text to a numerical vector representation using TF-IDF.
-func TextToVector(text string) []float64 {
-    // Convert the single text into a "document" for the TF-IDF vectorizer
-    // Normally, you would first fit the vectorizer on a larger corpus to calculate IDF values.
-    vectorizer.AddDocs(text)
-    vector := vectorizer.Transform([]string{text})
-
-    // The Transform method might return a sparse matrix or a dense slice depending on the library's implementation.
-    // You need to convert this output to a dense slice if it's not already in that format.
-    // Below is a pseudo-code as the actual implementation depends on how the TF-IDF library represents the transformed vector.
-
-    // Assuming vector is a slice of tfidf.Document, where each Document represents a vector for the text.
-    var tfidfVector []float64
-    for _, wordVector := range vector[0].WordWeights {
-        tfidfVector = append(tfidfVector, wordVector)
-    }
-    return tfidfVector
+// Assuming Document implementation is provided.
+// Here's a simple implementation of the Document interface based on the provided tfidf package.
+type SimpleDocument struct {
+    IDs []int
 }
 
-// ComputePCA performs PCA on the given text using the TF-IDF vector.
+func (d SimpleDocument) IDs() []int {
+    return d.IDs
+}
+
+// Convert text to a numerical vector representation using TF-IDF scores.
+// This function needs to convert text into a format that your tfidf package can work with.
+func TextToVector(docs []Document, tfidfCalculator *tfidf.TFIDF) [][]float64 {
+    vectors := make([][]float64, len(docs))
+    for i, doc := range docs {
+        tfidfCalculator.Add(doc)
+    }
+    tfidfCalculator.CalculateIDF()
+
+    for i, doc := range docs {
+        vectors[i] = tfidfCalculator.Score(doc)
+    }
+    return vectors
+}
+
+// ComputePCA performs PCA on the given documents using the TF-IDF vector.
 // Returns the principal components as a slice of floats.
-func ComputePCA(text string) ([]float64, error) {
-    vector := TextToVector(text)
-    rows, cols := 1, len(vector) // Adjust as needed for multiple vectors
-    data := mat.NewDense(rows, cols, vector)
+func ComputePCA(docs []Document) ([]float64, error) {
+    // Initialize the TFIDF calculator
+    tfidfCalculator := tfidf.New()
+
+    // Convert documents to vectors
+    vectors := TextToVector(docs, tfidfCalculator)
+
+    // Assuming vectors is a non-empty slice of TF-IDF vectors
+    rows, cols := len(vectors), len(vectors[0])
+    flatData := make([]float64, 0, rows*cols)
+    for _, vector := range vectors {
+        flatData = append(flatData, vector...)
+    }
+    data := mat.NewDense(rows, cols, flatData)
 
     var pc stat.PC
     ok := pc.PrincipalComponents(data, nil)
@@ -46,13 +55,18 @@ func ComputePCA(text string) ([]float64, error) {
         return nil, fmt.Errorf("PCA computation failed")
     }
 
-    // Extract the first principal component correctly
+    // Correctly use VectorsTo to extract principal components
     var vec mat.Dense
-    pc.VectorsTo(&vec)
+    pc.VectorsTo(&vec) // This line previously had incorrect usage
+    
+    // Extract the first principal component
+    pc1 := vec.ColView(0)
 
-    // Assuming we want the first principal component
-    var pc1 mat.VecDense
-    pc1.ColViewOf(&vec, 0)
+    // Convert to []float64
+    pc1Vec := make([]float64, pc1.Len())
+    for i := 0; i < pc1.Len(); i++ {
+        pc1Vec[i] = pc1.AtVec(i)
+    }
 
-    return pc1.RawVector().Data, nil
+    return pc1Vec, nil
 }
