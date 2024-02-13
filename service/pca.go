@@ -26,17 +26,17 @@ func ComputePCA(text string) ([]float64, error) {
     rows, cols := 1, len(vector) // Assuming one vector for simplicity; adjust as needed
     data := mat.NewDense(rows, cols, vector)
 
-    // Compute the PCA
+   // Compute the PCA
     var pc stat.PC
     ok := pc.PrincipalComponents(data, nil)
     if !ok {
-        return nil, fmt.Errorf("PCA computation failed")
-    }
+    return nil, fmt.Errorf("PCA computation failed")
+}
 
-    // Extract the first principal component
     var vec mat.VecDense
-    pc.VectorsTo(nil).ColView(0, &vec)
+    weights := pc.VectorsTo(nil) // This line is corrected; VectorsTo does not return a value but updates the receiver
+    firstPC := mat.Col(nil, 0, weights) // Extract the first principal component
 
-    return vec.RawVector().Data, nil
+return firstPC, nil
 }
 
