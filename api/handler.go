@@ -4,8 +4,8 @@ package api
 
 import (
     "github.com/gofiber/fiber/v2"
-    "github.com/Aanthord/prayerProcessor/model"
-    "github.com/Aanthord/prayerProcessor/service"
+    "prayerProcessor/model"
+    "prayerProcessor/service"
     "fmt"
 )
 

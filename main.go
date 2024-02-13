@@ -11,10 +11,10 @@ import (
     semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
     "log"
     "os"
-    "github.com/Aanthord/prayerProcessor/api"
-    "github.com/Aanthord/prayerProcessor/config"
-    "github.com/Aanthord/prayerProcessor/service"
-    _ "github.com/Aanthord/prayerProcessor/docs" // Import generated Swagger docs
+    "prayerProcessor/api"
+    "prayerProcessor/config"
+    "prayerProcessor/service"
+    _ "prayerProcessor/docs" // Import generated Swagger docs
 )
 
 // @title Prayer Processor API
